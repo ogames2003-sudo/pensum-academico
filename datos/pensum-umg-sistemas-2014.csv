@@ -1,0 +1,51 @@
+﻿codigo,nombre,creditos,ciclo,anio,area,orden,descripcion,prerrequisitos,creditos_minimos
+090001,Desarrollo Humano y Profesional,4,Ciclo 1,,,10,,,
+090002,Metodología de la Investigación,5,Ciclo 1,,,20,,,
+090003,Contabilidad I,5,Ciclo 1,,,30,,,
+090004,Introducción a los Sistemas de Cómputo,5,Ciclo 1,,,40,Curso con laboratorio de cómputo.,,
+090005,Lógica de Sistemas,5,Ciclo 1,,,50,,,
+090006,Precálculo,5,Ciclo 2,,,10,,,
+090007,Álgebra Lineal,5,Ciclo 2,,,20,,,
+090008,Algoritmos,5,Ciclo 2,,,30,Curso con laboratorio de cómputo.,,
+090009,Contabilidad II,5,Ciclo 2,,,40,,,
+090010,Matemática Discreta,5,Ciclo 2,,,50,,,
+090011,Física I,5,Ciclo 3,,,10,,090006,
+090012,Programación I,5,Ciclo 3,,,20,Curso con laboratorio de cómputo.,090008,
+090013,Cálculo I,5,Ciclo 3,,,30,,090006,
+090014,Proceso Administrativo,4,Ciclo 3,,,40,,,
+090015,Derecho Informático,5,Ciclo 3,,,50,,,
+090016,Microeconomía,5,Ciclo 4,,,10,,,
+090017,Programación II,5,Ciclo 4,,,20,Curso con laboratorio de cómputo.,090012,
+090018,Cálculo II,5,Ciclo 4,,,30,,090013,
+090019,Estadística I,5,Ciclo 4,,,40,,,
+090020,Física II,5,Ciclo 4,,,50,"Curso con laboratorio de física, electrónica y arquitectura de computadoras.",090011,
+090021,Métodos Numéricos,5,Ciclo 5,,,10,,,70
+090022,Programación III,5,Ciclo 5,,,20,Curso con laboratorio de cómputo.,090017,
+090023,Emprendedores de Negocios,5,Ciclo 5,,,30,,,
+090024,Electrónica Analógica,5,Ciclo 5,,,40,"Curso con laboratorio de física, electrónica y arquitectura de computadoras.",090020,
+090025,Estadística II,5,Ciclo 5,,,50,,090019,
+090026,Investigación de Operaciones,5,Ciclo 6,,,10,,,80
+090027,Bases de Datos I,5,Ciclo 6,,,20,Curso con laboratorio de cómputo.,090022,
+090028,Autómatas y Lenguajes Formales,5,Ciclo 6,,,30,,,80
+090029,Sistemas Operativos I,5,Ciclo 6,,,40,Curso con laboratorio de sistemas operativos y seguridad y auditoría en sistemas.,,80
+090030,Electrónica Digital,5,Ciclo 6,,,50,"Curso con laboratorio de física, electrónica y arquitectura de computadoras.",090024,
+090031,Bases de Datos II,5,Ciclo 7,,,10,Curso con laboratorio de cómputo.,090027,
+090032,Análisis de Sistemas I,5,Ciclo 7,,,20,,,100
+090033,Sistemas Operativos II,5,Ciclo 7,,,30,Curso con laboratorio de sistemas operativos y seguridad y auditoría en sistemas.,090029,
+090034,Arquitectura de Computadoras I,5,Ciclo 7,,,40,"Curso con laboratorio de física, electrónica y arquitectura de computadoras.",,100
+090035,Compiladores,5,Ciclo 7,,,50,,090028,
+090036,Desarrollo Web,5,Ciclo 8,,,10,Curso con laboratorio de cómputo.,090031,
+090037,Análisis de Sistemas II,5,Ciclo 8,,,20,,090032,
+090038,Redes de Computadoras I,5,Ciclo 8,,,30,Curso con laboratorio de redes y telecomunicaciones.,,125
+090039,Ética Profesional,4,Ciclo 8,,,40,,,100
+090040,Arquitectura de Computadoras II,5,Ciclo 8,,,50,"Curso con laboratorio de física, electrónica y arquitectura de computadoras.",090034,
+090041,Administración de Tecnologías de Información,5,Ciclo 9,,,10,,,150
+090042,Ingeniería de Software,5,Ciclo 9,,,20,,,150
+090043,Proyecto de Graduación I,6,Ciclo 9,,,30,,,150
+090044,Redes de Computadoras II,5,Ciclo 9,,,40,Curso con laboratorio de redes y telecomunicaciones.,090038,
+090045,Inteligencia Artificial,5,Ciclo 9,,,50,,,150
+090046,Telecomunicaciones,5,Ciclo 10,,,10,Curso con laboratorio de redes y telecomunicaciones.,,175
+090047,Seminario de Tecnologías de Información,6,Ciclo 10,,,20,,,175
+090048,Aseguramiento de la Calidad de Software,5,Ciclo 10,,,30,,,175
+090049,Proyecto de Graduación II,6,Ciclo 10,,,40,,090043,
+090050,Seguridad y Auditoría de Sistemas,5,Ciclo 10,,,50,Curso con laboratorio de sistemas operativos y seguridad y auditoría en sistemas.,,175
