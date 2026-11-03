@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { friendlyError } from '../../services/supabase';
 
 export function LoginPage() {
-  const { session, isAdmin, loading, signIn } = useAuth();
+  const { session, isAdmin, loading, profileIssue, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,11 @@ export function LoginPage() {
 
           {session && !isAdmin && !loading && (
             <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" role="alert">
-              Tu cuenta ({session.user.email}) no tiene rol de administrador. Consulta la sección «Crear el administrador» del README.
+              {profileIssue?.startsWith('error:')
+                ? `Iniciaste sesión, pero no se pudo leer tu perfil: ${profileIssue.slice(6)}`
+                : profileIssue === 'missing'
+                  ? `Tu cuenta (${session.user.email}) no tiene perfil en este proyecto de Supabase. Ejecuta la consulta de «Crear el administrador» del README en este mismo proyecto.`
+                  : `Tu cuenta (${session.user.email}) tiene perfil, pero no con rol de administrador. Ejecuta la consulta de «Crear el administrador» del README.`}
             </p>
           )}
 

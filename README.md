@@ -25,7 +25,7 @@ desde el panel administrativo: **no hay que editar código para agregar cursos**
 
    ```sql
    insert into public.profiles (id, display_name, role)
-   select id, email, 'admin' from auth.users where email = 'TU-CORREO@ejemplo.com'
+   select id, email, 'admin' from auth.users where lower(email) = lower('TU-CORREO@ejemplo.com')
    on conflict (id) do update set role = 'admin';
    ```
 
