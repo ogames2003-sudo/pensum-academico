@@ -67,7 +67,7 @@ export function PensumBoard({ data, academic, courseById, detailActions }: Props
                 <header className="mb-2 flex items-baseline justify-between gap-2 px-1">
                   <div>
                     {s.term?.yearNumber != null && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-100">Año {s.term.yearNumber}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-accent-600 dark:text-accent-100">Año {s.term.yearNumber}</p>
                     )}
                     <h3 className="font-semibold">{s.term?.name ?? `Sin ${labels.singular.toLowerCase()} asignado`}</h3>
                   </div>

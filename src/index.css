@@ -12,6 +12,13 @@
   --color-brand-600: #2856b8;
   --color-brand-700: #1f4494;
   --color-brand-900: #142a5c;
+  /* Color secundario de la paleta (igual al principal salvo en paletas de dos colores). */
+  --color-accent-50: #eff5ff;
+  --color-accent-100: #dbe7fe;
+  --color-accent-500: #3b6fd8;
+  --color-accent-600: #2856b8;
+  --color-accent-700: #1f4494;
+  --color-accent-900: #142a5c;
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-in: slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   @keyframes fade-in {

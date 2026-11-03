@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router';
-import { ArrowLeft, GraduationCap, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { usePensum } from '../../context/PensumContext';
+import { ProgramLogo } from '../../components/layout/ProgramLogo';
 import { friendlyError } from '../../services/supabase';
 
 export function LoginPage() {
   const { session, isAdmin, loading, profileIssue, signIn } = useAuth();
+  const { data } = usePensum();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,10 +35,8 @@ export function LoginPage() {
         <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
           <ArrowLeft className="size-4" /> Ver pensum público
         </Link>
-        <div className="card p-6 sm:p-8">
-          <span className="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
-            <GraduationCap className="size-6" />
-          </span>
+        <div className="card border-t-4 border-t-accent-600 p-6 sm:p-8">
+          <ProgramLogo size="lg" logoUrl={data?.program.logoUrl} name={data?.program.institution ?? data?.program.name} />
           <h1 className="mt-4 text-xl font-bold">Administración</h1>
           <p className="mt-1 text-sm text-slate-500">Inicia sesión con tu cuenta autorizada.</p>
 

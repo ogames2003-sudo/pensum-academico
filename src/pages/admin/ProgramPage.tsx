@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowDown, ArrowUp, Check, Eye, EyeOff, Layers, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Eye, EyeOff, ImageUp, Layers, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ProgramLogo } from '../../components/layout/ProgramLogo';
 import type { AccentColor, OrganizationType, Program, Term } from '../../types/domain';
 import { ORGANIZATION_LABELS } from '../../types/domain';
 import { usePensum } from '../../context/PensumContext';
@@ -50,6 +51,7 @@ function ProgramForm({ program }: { program: Program | null }) {
     institution: program?.institution ?? '',
     organizationType: program?.organizationType ?? 'semester',
     accentColor: program?.accentColor ?? 'azul',
+    logoUrl: program?.logoUrl ?? null,
     isPublic: program?.isPublic ?? false,
     showProgressPublic: program?.showProgressPublic ?? false,
   }));
@@ -117,6 +119,8 @@ function ProgramForm({ program }: { program: Program | null }) {
         )}
       </div>
 
+      <LogoPicker value={form.logoUrl} onChange={(v) => set('logoUrl', v)} />
+
       <div>
         <p className="label">Color de identidad</p>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color de identidad">
@@ -132,7 +136,11 @@ function ProgramForm({ program }: { program: Program | null }) {
               }}
               className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm ${form.accentColor === k ? 'border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700'}`}
             >
-              <span className="size-4 rounded-full" style={{ background: ACCENTS[k].shades[600] }} /> {ACCENTS[k].label}
+              <span className="flex">
+                <span className="size-4 rounded-full ring-2 ring-white dark:ring-slate-900" style={{ background: ACCENTS[k].brand[600] }} />
+                {ACCENTS[k].accent && <span className="-ml-1.5 size-4 rounded-full ring-2 ring-white dark:ring-slate-900" style={{ background: ACCENTS[k].accent[600] }} />}
+              </span>
+              {ACCENTS[k].label}
             </button>
           ))}
         </div>
@@ -161,6 +169,72 @@ function ProgramForm({ program }: { program: Program | null }) {
         </button>
       </div>
     </form>
+  );
+}
+
+const LOGO_MAX_PX = 256;
+const LOGO_MAX_CHARS = 400_000; // mismo límite que la restricción de la base de datos
+
+/** Reduce la imagen a ≤ 256 px y la convierte en data URL PNG (conserva la transparencia). */
+async function imageToDataUrl(file: File): Promise<string> {
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Usa una imagen PNG, JPG o WebP.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('La imagen supera 5 MB.');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+      i.src = url;
+    });
+    const scale = Math.min(1, LOGO_MAX_PX / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/png');
+    if (dataUrl.length > LOGO_MAX_CHARS) throw new Error('La imagen sigue siendo demasiado pesada; prueba con una más simple.');
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function LogoPicker({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div>
+      <p className="label">Logo</p>
+      <div className="flex flex-wrap items-center gap-4">
+        <ProgramLogo logoUrl={value} size="lg" />
+        <label className="btn-secondary cursor-pointer">
+          <ImageUp className="size-4" /> {value ? 'Cambiar logo' : 'Subir logo'}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setError(null);
+              try {
+                onChange(await imageToDataUrl(file));
+              } catch (err) {
+                setError((err as Error).message);
+              }
+            }}
+          />
+        </label>
+        {value && (
+          <button type="button" className="btn-ghost text-red-600" onClick={() => onChange(null)}>
+            Quitar logo
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">PNG, JPG o WebP. Se reduce automáticamente. Se aplica al pulsar «Guardar cambios».</p>
+      {error && <p className="mt-1 text-xs text-red-600" role="alert">{error}</p>}
+    </div>
   );
 }
 

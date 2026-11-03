@@ -4,7 +4,9 @@ import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { readFileSync } from 'node:fs';
 
-const migration = readFileSync(new URL('../supabase/migrations/0001_pensum.sql', import.meta.url), 'utf8');
+const migrations = ['0001_pensum.sql', '0002_branding.sql'].map((f) =>
+  readFileSync(new URL(`../supabase/migrations/${f}`, import.meta.url), 'utf8'),
+);
 const db = new PGlite({ extensions: { pgcrypto } });
 let failures = 0;
 const ok = (cond, msg) => {
@@ -29,8 +31,8 @@ await db.exec(`
   grant execute on function auth.uid() to anon, authenticated;
   grant usage on schema public to anon, authenticated;
 `);
-await db.exec(migration);
-ok(true, 'migración aplicada');
+for (const m of migrations) await db.exec(m);
+ok(true, 'migraciones aplicadas');
 
 const ADMIN = '00000000-0000-0000-0000-00000000000a';
 const VIEWER = '00000000-0000-0000-0000-00000000000b';
@@ -114,6 +116,16 @@ await as('authenticated', ADMIN);
 await db.exec(`update public.programs set show_progress_public = true where id = '${prog}'`);
 await as('anon');
 ok((await db.query(`select * from public.student_progress`)).rows.length === 2, 'anon ve el progreso cuando se publica');
+
+// ───── Identidad visual (0002) ─────
+await as('authenticated', ADMIN);
+await db.exec(`update public.programs set accent_color = 'rojoazul', logo_url = 'data:image/png;base64,iVBORw0KGgo=' where id = '${prog}'`);
+ok(true, 'paleta rojoazul y logo PNG aceptados');
+await expectError(`update public.programs set logo_url = 'https://ejemplo.test/logo.png' where id = '${prog}'`, /check/, 'logo externo (no data URL) rechazado');
+await expectError(`update public.programs set logo_url = 'data:image/svg+xml;base64,PHN2Zz4=' where id = '${prog}'`, /check/, 'logo SVG rechazado (puede contener scripts)');
+await expectError(`update public.programs set accent_color = 'verde' where id = '${prog}'`, /check/, 'paleta desconocida rechazada');
+await as('anon');
+ok((await db.query(`select logo_url from public.programs`)).rows[0]?.logo_url?.startsWith('data:image/png'), 'anon ve el logo del programa publicado');
 
 // ───── Usuario autenticado sin rol admin ─────
 await as('authenticated', VIEWER);

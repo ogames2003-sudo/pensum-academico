@@ -1,9 +1,10 @@
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router';
-import { BookOpen, Database, Eye, GraduationCap, LayoutDashboard, LogOut, Settings, ShieldAlert, Table2 } from 'lucide-react';
+import { BookOpen, Database, Eye, LayoutDashboard, LogOut, Settings, ShieldAlert, Table2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePensum } from '../../context/PensumContext';
 import { EmptyState, LoadingState } from '../ui/States';
 import { ThemeToggle } from './ThemeToggle';
+import { ProgramLogo } from './ProgramLogo';
 
 const NAV = [
   { to: '/admin', label: 'Resumen', icon: LayoutDashboard, end: true },
@@ -45,11 +46,9 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-dvh lg:flex">
-      <aside className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r">
+      <aside className="no-print sticky top-0 z-30 border-t-4 border-t-accent-600 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r">
         <div className="flex items-center gap-2.5 px-4 py-3 lg:py-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
-            <GraduationCap className="size-5" />
-          </span>
+          <ProgramLogo logoUrl={data?.program.logoUrl} name={data?.program.institution ?? data?.program.name} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{data?.program.name ?? 'Nuevo programa'}</p>
             <p className="text-xs text-slate-500">Administración</p>

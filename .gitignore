@@ -7,3 +7,6 @@ coverage
 !.env.example
 *.tsbuildinfo
 .supabase
+
+# Imágenes de apoyo (logos) que se suben desde el panel, no forman parte del código
+datos/*.png

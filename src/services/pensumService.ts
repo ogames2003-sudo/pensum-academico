@@ -21,6 +21,7 @@ interface ProgramRow {
   institution: string | null;
   organization_type: OrganizationType;
   accent_color: AccentColor;
+  logo_url: string | null;
   is_public: boolean;
   show_progress_public: boolean;
   student_id: string | null;
@@ -62,6 +63,7 @@ const toProgram = (r: ProgramRow): Program => ({
   institution: r.institution,
   organizationType: r.organization_type,
   accentColor: r.accent_color,
+  logoUrl: r.logo_url ?? null,
   isPublic: r.is_public,
   showProgressPublic: r.show_progress_public,
   studentId: r.student_id,
@@ -106,19 +108,30 @@ function chunk<T>(items: T[], size = 100): T[][] {
   return out;
 }
 
-const PROGRAM_COLUMNS ='id, slug, name, institution, organization_type, accent_color, is_public, show_progress_public, student_id';
+const PROGRAM_COLUMNS =
+  'id, slug, name, institution, organization_type, accent_color, logo_url, is_public, show_progress_public, student_id';
 
 // ───────────────────────── Lectura ─────────────────────────
 
 /** Programa a mostrar: el del slug configurado, o el primero creado (visible según RLS). */
 export async function fetchProgram(): Promise<Program | null> {
   const sb = requireSupabase();
-  let q = sb.from('programs').select(PROGRAM_COLUMNS).order('created_at').limit(1);
-  if (PROGRAM_SLUG) q = q.eq('slug', PROGRAM_SLUG);
-  const { data, error } = await q;
+  const query = (columns: string) => {
+    let q = sb.from('programs').select(columns).order('created_at').limit(1);
+    if (PROGRAM_SLUG) q = q.eq('slug', PROGRAM_SLUG);
+    return q;
+  };
+  let { data, error } = await query(PROGRAM_COLUMNS);
+  // Base sin la migración 0002 (sin logo_url): se sigue mostrando el pensum, sin logo.
+  if (error && isMissingBrandingColumn(error)) {
+    ({ data, error } = await query(PROGRAM_COLUMNS.replace(', logo_url', '')));
+  }
   if (error) throw error;
-  return data?.[0] ? toProgram(data[0] as ProgramRow) : null;
+  return data?.[0] ? toProgram(data[0] as unknown as ProgramRow) : null;
 }
+
+export const isMissingBrandingColumn = (e: { code?: string; message?: string }) =>
+  e.code === '42703' || e.code === 'PGRST204' || /logo_url/.test(e.message ?? '');
 
 export async function fetchPensum(program: Program, opts: { isAdmin: boolean }): Promise<PensumData> {
   const sb = requireSupabase();
@@ -176,6 +189,7 @@ export interface ProgramInput {
   institution: string | null;
   organizationType: OrganizationType;
   accentColor: AccentColor;
+  logoUrl: string | null;
   isPublic: boolean;
   showProgressPublic: boolean;
 }
@@ -186,6 +200,7 @@ const programToRow = (p: ProgramInput) => ({
   institution: p.institution?.trim() || null,
   organization_type: p.organizationType,
   accent_color: p.accentColor,
+  logo_url: p.logoUrl,
   is_public: p.isPublic,
   show_progress_public: p.showProgressPublic,
 });

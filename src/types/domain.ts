@@ -2,7 +2,7 @@
 
 export type OrganizationType = 'semester' | 'cycle' | 'trimester' | 'quarter' | 'grade' | 'year';
 
-export type AccentColor = 'azul' | 'indigo' | 'vino' | 'pizarra' | 'ambar';
+export type AccentColor = 'azul' | 'indigo' | 'vino' | 'pizarra' | 'ambar' | 'rojoazul';
 
 export interface Program {
   id: string;
@@ -11,6 +11,8 @@ export interface Program {
   institution: string | null;
   organizationType: OrganizationType;
   accentColor: AccentColor;
+  /** Logo propio (data URL de imagen). null = ícono genérico. */
+  logoUrl: string | null;
   /** El pensum es visible sin iniciar sesión. */
   isPublic: boolean;
   /** Además del pensum, el progreso (aprobado/pendiente) es visible públicamente. */

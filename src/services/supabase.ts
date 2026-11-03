@@ -22,6 +22,9 @@ export function requireSupabase(): SupabaseClient {
 export function friendlyError(error: unknown): string {
   const e = error as { code?: string; message?: string } | null;
   const msg = e?.message ?? String(error);
+  if (e?.code === '42703' || e?.code === 'PGRST204' || /logo_url|programs_accent_color_check/.test(msg)) {
+    return 'Falta ejecutar en Supabase la migración supabase/migrations/0002_branding.sql (logo y paleta rojo y azul).';
+  }
   if (e?.code === '23505') {
     if (msg.includes('courses_program_id_code_key')) return 'Ya existe un curso con ese código.';
     if (msg.includes('terms_program_name_uq')) return 'Ya existe un ciclo con ese nombre.';

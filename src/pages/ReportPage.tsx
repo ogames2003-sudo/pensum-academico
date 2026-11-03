@@ -34,12 +34,15 @@ export function ReportPage() {
         </button>
       </div>
 
-      <header className="border-b-2 border-slate-900 pb-4">
-        {data.program.institution && <p className="text-sm text-slate-600">{data.program.institution}</p>}
-        <h1 className="text-2xl font-bold">{data.program.name}</h1>
-        <p className="text-sm text-slate-600">
-          Pensum{show ? ' y progreso académico' : ''} · generado el {new Date().toLocaleDateString('es', { dateStyle: 'long' })}
-        </p>
+      <header className="flex items-center gap-4 border-b-2 border-accent-600 pb-4">
+        {data.program.logoUrl && <img src={data.program.logoUrl} alt="" className="size-16 shrink-0 object-contain" />}
+        <div>
+          {data.program.institution && <p className="text-sm text-slate-600">{data.program.institution}</p>}
+          <h1 className="text-2xl font-bold text-brand-900">{data.program.name}</h1>
+          <p className="text-sm text-slate-600">
+            Pensum{show ? ' y progreso académico' : ''} · generado el {new Date().toLocaleDateString('es', { dateStyle: 'long' })}
+          </p>
+        </div>
       </header>
 
       <section className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 print-avoid-break">

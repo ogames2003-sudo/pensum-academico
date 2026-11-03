@@ -3,7 +3,7 @@ import type { Course, PensumData, ProgressStatus, Term } from '../types/domain';
 import { computeAcademicState, setCourseStatus, type AcademicState } from '../lib/engine/academic';
 import { fetchPensum, fetchProgram, setProgress } from '../services/pensumService';
 import { friendlyError, isSupabaseConfigured } from '../services/supabase';
-import { applyAccent } from '../lib/theme';
+import { applyAccent, applyFavicon } from '../lib/theme';
 import { useAuth } from './AuthContext';
 
 interface PensumState {
@@ -37,6 +37,7 @@ export function PensumProvider({ children }: { children: ReactNode }) {
         return;
       }
       applyAccent(program.accentColor);
+      applyFavicon(program.logoUrl);
       setData(await fetchPensum(program, { isAdmin }));
       setStatus('ready');
     } catch (e) {
