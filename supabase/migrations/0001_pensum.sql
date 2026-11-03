@@ -239,7 +239,9 @@ create policy student_progress_admin_all on public.student_progress for all
   using (public.is_admin()) with check (public.is_admin());
 
 -- Privilegios por tabla (RLS filtra filas; esto limita operaciones).
-revoke all on all tables in schema public from anon, authenticated;
+-- Solo las tablas del pensum: el proyecto de Supabase puede compartirse con otras apps.
+revoke all on public.profiles, public.programs, public.terms, public.courses, public.course_requirements,
+  public.requirement_courses, public.student_progress from anon, authenticated;
 grant select on public.programs, public.terms, public.courses, public.course_requirements,
   public.requirement_courses, public.student_progress to anon, authenticated;
 grant select, update on public.profiles to authenticated;
