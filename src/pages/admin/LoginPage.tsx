@@ -1,0 +1,70 @@
+import { useState, type FormEvent } from 'react';
+import { Link, Navigate } from 'react-router';
+import { ArrowLeft, GraduationCap, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { friendlyError } from '../../services/supabase';
+
+export function LoginPage() {
+  const { session, isAdmin, loading, signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!loading && session && isAdmin) return <Navigate to="/admin" replace />;
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await signIn(email.trim(), password);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="grid min-h-dvh place-items-center px-4 py-10">
+      <div className="w-full max-w-sm">
+        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
+          <ArrowLeft className="size-4" /> Ver pensum público
+        </Link>
+        <div className="card p-6 sm:p-8">
+          <span className="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
+            <GraduationCap className="size-6" />
+          </span>
+          <h1 className="mt-4 text-xl font-bold">Administración</h1>
+          <p className="mt-1 text-sm text-slate-500">Inicia sesión con tu cuenta autorizada.</p>
+
+          {session && !isAdmin && !loading && (
+            <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" role="alert">
+              Tu cuenta ({session.user.email}) no tiene rol de administrador. Consulta la sección «Crear el administrador» del README.
+            </p>
+          )}
+
+          <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+            <div>
+              <label htmlFor="email" className="label">Correo electrónico</label>
+              <input id="email" type="email" autoComplete="username" required className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="password" className="label">Contraseña</label>
+              <input id="password" type="password" autoComplete="current-password" required className="input" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            {error && (
+              <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300" role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" className="btn-primary w-full py-2.5" disabled={submitting || !email || !password}>
+              {submitting && <Loader2 className="size-4 animate-spin" />} Iniciar sesión
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

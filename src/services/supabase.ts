@@ -1,0 +1,39 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
+const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+/** Slug del programa público configurado (opcional). */
+export const PROGRAM_SLUG = ((import.meta.env.VITE_PROGRAM_SLUG as string | undefined) ?? '').trim() || null;
+
+export const isSupabaseConfigured = Boolean(url && anonKey);
+
+/** Cliente único con la clave pública (anon). La service_role nunca se usa en el cliente. */
+export const supabase: SupabaseClient | null = isSupabaseConfigured
+  ? createClient(url!, anonKey!, { auth: { persistSession: true, autoRefreshToken: true } })
+  : null;
+
+export function requireSupabase(): SupabaseClient {
+  if (!supabase) throw new Error('Supabase no está configurado (faltan VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).');
+  return supabase;
+}
+
+/** Traduce errores de PostgREST/Postgres a mensajes comprensibles. */
+export function friendlyError(error: unknown): string {
+  const e = error as { code?: string; message?: string } | null;
+  const msg = e?.message ?? String(error);
+  if (e?.code === '23505') {
+    if (msg.includes('courses_program_id_code_key')) return 'Ya existe un curso con ese código.';
+    if (msg.includes('terms_program_name_uq')) return 'Ya existe un ciclo con ese nombre.';
+    if (msg.includes('programs_slug_key')) return 'Ese identificador (slug) ya está en uso.';
+    return 'Registro duplicado.';
+  }
+  if (e?.code === '42501' || /row-level security|No autorizado/i.test(msg)) {
+    return 'No tienes permisos para esta operación. Verifica que tu usuario tenga rol de administrador.';
+  }
+  if (e?.code === '23514' || e?.code === 'P0001') return msg.replace(/^.*?:\s*/, '') || msg;
+  if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Sin conexión con el servidor. Revisa tu internet e inténtalo de nuevo.';
+  if (/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.';
+  if (/Email not confirmed/i.test(msg)) return 'Debes confirmar tu correo antes de iniciar sesión.';
+  return msg;
+}

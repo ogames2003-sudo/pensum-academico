@@ -1,0 +1,79 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Course, PensumData, ProgressStatus, Term } from '../types/domain';
+import { computeAcademicState, setCourseStatus, type AcademicState } from '../lib/engine/academic';
+import { fetchPensum, fetchProgram, setProgress } from '../services/pensumService';
+import { friendlyError, isSupabaseConfigured } from '../services/supabase';
+import { applyAccent } from '../lib/theme';
+import { useAuth } from './AuthContext';
+
+interface PensumState {
+  status: 'loading' | 'ready' | 'empty' | 'error';
+  error: string | null;
+  data: PensumData | null;
+  academic: AcademicState | null;
+  courseById: Map<string, Course>;
+  termById: Map<string, Term>;
+  reload: () => Promise<void>;
+  /** Persiste el estado y SOLO entonces actualiza la vista. Lanza si falla. */
+  changeStatus: (courseId: string, status: ProgressStatus) => Promise<void>;
+}
+
+const PensumContext = createContext<PensumState | null>(null);
+
+export function PensumProvider({ children }: { children: ReactNode }) {
+  const { isAdmin, loading: authLoading } = useAuth();
+  const [status, setStatus] = useState<PensumState['status']>('loading');
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<PensumData | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    try {
+      setError(null);
+      const program = await fetchProgram();
+      if (!program) {
+        setData(null);
+        setStatus('empty');
+        return;
+      }
+      applyAccent(program.accentColor);
+      setData(await fetchPensum(program, { isAdmin }));
+      setStatus('ready');
+    } catch (e) {
+      setError(friendlyError(e));
+      setStatus('error');
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!authLoading) void reload();
+  }, [authLoading, reload]);
+
+  const changeStatus = useCallback(
+    async (courseId: string, next: ProgressStatus) => {
+      if (!data?.program.studentId) throw new Error('El programa no tiene un estudiante asignado.');
+      await setProgress(data.program.studentId, courseId, next);
+      setData((d) => (d ? { ...d, progress: setCourseStatus(d.progress, courseId, next) } : d));
+    },
+    [data?.program.studentId],
+  );
+
+  const academic = useMemo(
+    () => (data ? computeAcademicState(data.courses, data.requirements, data.progress) : null),
+    [data],
+  );
+  const courseById = useMemo(() => new Map((data?.courses ?? []).map((c) => [c.id, c])), [data]);
+  const termById = useMemo(() => new Map((data?.terms ?? []).map((t) => [t.id, t])), [data]);
+
+  return (
+    <PensumContext.Provider value={{ status, error, data, academic, courseById, termById, reload, changeStatus }}>
+      {children}
+    </PensumContext.Provider>
+  );
+}
+
+export function usePensum(): PensumState {
+  const ctx = useContext(PensumContext);
+  if (!ctx) throw new Error('usePensum debe usarse dentro de <PensumProvider>.');
+  return ctx;
+}
