@@ -99,7 +99,14 @@ const requirementsToJson = (reqs: Requirement[]) =>
       : { type: 'courses', mode: r.mode, course_ids: r.courseIds },
   );
 
-const PROGRAM_COLUMNS = 'id, slug, name, institution, organization_type, accent_color, is_public, show_progress_public, student_id';
+/** Lotes de ids para que los filtros `in` no generen URLs demasiado largas en pensums grandes. */
+function chunk<T>(items: T[], size = 100): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+const PROGRAM_COLUMNS ='id, slug, name, institution, organization_type, accent_color, is_public, show_progress_public, student_id';
 
 // ───────────────────────── Lectura ─────────────────────────
 
@@ -115,32 +122,37 @@ export async function fetchProgram(): Promise<Program | null> {
 
 export async function fetchPensum(program: Program, opts: { isAdmin: boolean }): Promise<PensumData> {
   const sb = requireSupabase();
-  const [terms, courses, reqs] = await Promise.all([
+  const [terms, courses] = await Promise.all([
     sb.from('terms').select('*').eq('program_id', program.id).order('sort_order'),
     sb.from('courses').select('*').eq('program_id', program.id).order('sort_order'),
-    sb
-      .from('course_requirements')
-      .select('id, course_id, type, mode, min_credits, sort_order, requirement_courses(required_course_id), courses!inner(program_id)')
-      .eq('courses.program_id', program.id)
-      .order('sort_order'),
   ]);
-  for (const r of [terms, courses, reqs]) if (r.error) throw r.error;
+  for (const r of [terms, courses]) if (r.error) throw r.error;
+  const courseIds = ((courses.data ?? []) as CourseRow[]).map((c) => c.id);
 
+  // Filtrar por ids de curso (no por un embed de `courses`): course_requirements se relaciona con courses
+  // por dos caminos (directo y vía requirement_courses) y PostgREST rechaza el embed por ambiguo.
   const requirements: Record<string, Requirement[]> = {};
-  for (const row of (reqs.data ?? []) as unknown as RequirementRow[]) {
-    (requirements[row.course_id] ??= []).push(toRequirement(row));
+  for (const ids of chunk(courseIds)) {
+    const { data, error } = await sb
+      .from('course_requirements')
+      .select('id, course_id, type, mode, min_credits, sort_order, requirement_courses(required_course_id)')
+      .in('course_id', ids)
+      .order('sort_order');
+    if (error) throw error;
+    for (const row of (data ?? []) as unknown as RequirementRow[]) {
+      (requirements[row.course_id] ??= []).push(toRequirement(row));
+    }
   }
 
   const progressVisible = opts.isAdmin || (program.isPublic && program.showProgressPublic);
   const progress: ProgressMap = {};
   if (progressVisible && program.studentId) {
-    const courseIds = (courses.data ?? []).map((c) => (c as CourseRow).id);
-    if (courseIds.length) {
+    for (const ids of chunk(courseIds)) {
       const { data, error } = await sb
         .from('student_progress')
         .select('course_id, status')
         .eq('student_id', program.studentId)
-        .in('course_id', courseIds);
+        .in('course_id', ids);
       if (error) throw error;
       for (const p of data ?? []) if (p.status === 'approved') progress[p.course_id as string] = 'approved';
     }
