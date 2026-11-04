@@ -157,8 +157,8 @@ function ProgramForm({ program }: { program: Program | null }) {
           checked={form.isPublic && form.showProgressPublic}
           disabled={!form.isPublic}
           onChange={(v) => set('showProgressPublic', v)}
-          label="Mostrar también el progreso académico"
-          hint="Muestra qué cursos están aprobados o pendientes y las estadísticas de avance."
+          label="Mostrar públicamente el progreso del estudiante principal"
+          hint="Sin iniciar sesión se vería el progreso de la cuenta principal (la tuya). Con cuentas de estudiantes, déjalo apagado: cada uno ve su propio progreso al iniciar sesión."
         />
       </div>
 

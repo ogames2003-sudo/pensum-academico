@@ -1,16 +1,18 @@
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router';
-import { BookOpen, Database, Eye, LayoutDashboard, LogOut, Settings, ShieldAlert, Table2 } from 'lucide-react';
+import { BookOpen, Database, Eye, LayoutDashboard, LogOut, Settings, ShieldAlert, Table2, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePensum } from '../../context/PensumContext';
 import { EmptyState, LoadingState } from '../ui/States';
 import { ThemeToggle } from './ThemeToggle';
 import { ProgramLogo } from './ProgramLogo';
 import { ADMIN_PATH } from '../../config';
+import { StudentSwitcher } from '../admin/StudentSwitcher';
 
 const NAV = [
   { to: ADMIN_PATH, label: 'Resumen', icon: LayoutDashboard, end: true },
   { to: `${ADMIN_PATH}/pensum`, label: 'Pensum', icon: Table2 },
   { to: `${ADMIN_PATH}/cursos`, label: 'Cursos', icon: BookOpen },
+  { to: `${ADMIN_PATH}/estudiantes`, label: 'Estudiantes', icon: Users },
   { to: `${ADMIN_PATH}/programa`, label: 'Programa', icon: Settings },
   { to: `${ADMIN_PATH}/datos`, label: 'Datos', icon: Database },
 ];
@@ -90,6 +92,8 @@ export function AdminLayout() {
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        {/* El progreso que se ve y edita depende del estudiante elegido. */}
+        {[ADMIN_PATH, `${ADMIN_PATH}/pensum`, `${ADMIN_PATH}/cursos`].includes(location.pathname.replace(/\/$/, '')) && <StudentSwitcher />}
         <Outlet />
         <div className="no-print mt-10 flex justify-center gap-4 text-sm lg:hidden">
           <NavLink to="/" className="text-slate-500 hover:underline">Vista pública</NavLink>

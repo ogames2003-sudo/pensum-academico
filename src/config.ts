@@ -8,7 +8,7 @@ export function resolveAdminPath(raw: string | undefined): string {
   if (!value) return '/admin';
   const path = value.startsWith('/') ? value : `/${value}`;
   // Un solo segmento seguro que no choque con las rutas públicas.
-  if (!/^\/[a-z0-9][a-z0-9_-]{2,59}$/.test(path) || path === '/reporte') {
+  if (!/^\/[a-z0-9][a-z0-9_-]{2,59}$/.test(path) || ['/reporte', '/ingresar'].includes(path)) {
     console.warn(`VITE_ADMIN_PATH inválido («${raw}»); se usa /admin.`);
     return '/admin';
   }

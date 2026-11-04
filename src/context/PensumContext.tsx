@@ -14,6 +14,10 @@ interface PensumState {
   courseById: Map<string, Course>;
   termById: Map<string, Term>;
   reload: () => Promise<void>;
+  /** Estudiante cuyo progreso se muestra (null = ninguno). */
+  progressStudentId: string | null;
+  /** Solo admin: elegir de qué estudiante se ve y edita el progreso (null = el estudiante principal del programa). */
+  selectStudent: (studentId: string | null) => void;
   /** Persiste el estado y SOLO entonces actualiza la vista. Lanza si falla. */
   changeStatus: (courseId: string, status: ProgressStatus) => Promise<void>;
 }
@@ -21,10 +25,12 @@ interface PensumState {
 const PensumContext = createContext<PensumState | null>(null);
 
 export function PensumProvider({ children }: { children: ReactNode }) {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, isStudent, session, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<PensumState['status']>('loading');
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PensumData | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const userId = session?.user.id ?? null;
 
   const reload = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -38,25 +44,38 @@ export function PensumProvider({ children }: { children: ReactNode }) {
       }
       applyAccent(program.accentColor);
       applyFavicon(program.logoUrl);
-      setData(await fetchPensum(program, { isAdmin }));
+      // Cada quien ve el progreso que le corresponde; RLS lo vuelve a comprobar en la base.
+      const progressStudentId = isAdmin
+        ? (selectedStudentId ?? program.studentId)
+        : isStudent
+          ? userId
+          : program.isPublic && program.showProgressPublic
+            ? program.studentId
+            : null;
+      setData(await fetchPensum(program, { progressStudentId }));
       setStatus('ready');
     } catch (e) {
       setError(friendlyError(e));
       setStatus('error');
     }
-  }, [isAdmin]);
+  }, [isAdmin, isStudent, userId, selectedStudentId]);
 
   useEffect(() => {
     if (!authLoading) void reload();
   }, [authLoading, reload]);
 
+  // Al cerrar sesión o cambiar de usuario, se olvida el estudiante elegido.
+  useEffect(() => setSelectedStudentId(null), [userId]);
+
+  const progressStudentId = data?.progressStudentId ?? null;
+
   const changeStatus = useCallback(
     async (courseId: string, next: ProgressStatus) => {
-      if (!data?.program.studentId) throw new Error('El programa no tiene un estudiante asignado.');
-      await setProgress(data.program.studentId, courseId, next);
+      if (!progressStudentId) throw new Error('No hay un estudiante seleccionado.');
+      await setProgress(progressStudentId, courseId, next);
       setData((d) => (d ? { ...d, progress: setCourseStatus(d.progress, courseId, next) } : d));
     },
-    [data?.program.studentId],
+    [progressStudentId],
   );
 
   const academic = useMemo(
@@ -67,7 +86,20 @@ export function PensumProvider({ children }: { children: ReactNode }) {
   const termById = useMemo(() => new Map((data?.terms ?? []).map((t) => [t.id, t])), [data]);
 
   return (
-    <PensumContext.Provider value={{ status, error, data, academic, courseById, termById, reload, changeStatus }}>
+    <PensumContext.Provider
+      value={{
+        status,
+        error,
+        data,
+        academic,
+        courseById,
+        termById,
+        reload,
+        progressStudentId,
+        selectStudent: setSelectedStudentId,
+        changeStatus,
+      }}
+    >
       {children}
     </PensumContext.Provider>
   );

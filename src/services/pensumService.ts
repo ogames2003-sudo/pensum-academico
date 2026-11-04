@@ -133,7 +133,7 @@ export async function fetchProgram(): Promise<Program | null> {
 export const isMissingBrandingColumn = (e: { code?: string; message?: string }) =>
   e.code === '42703' || e.code === 'PGRST204' || /logo_url/.test(e.message ?? '');
 
-export async function fetchPensum(program: Program, opts: { isAdmin: boolean }): Promise<PensumData> {
+export async function fetchPensum(program: Program, opts: { progressStudentId: string | null }): Promise<PensumData> {
   const sb = requireSupabase();
   const [terms, courses] = await Promise.all([
     sb.from('terms').select('*').eq('program_id', program.id).order('sort_order'),
@@ -157,14 +157,15 @@ export async function fetchPensum(program: Program, opts: { isAdmin: boolean }):
     }
   }
 
-  const progressVisible = opts.isAdmin || (program.isPublic && program.showProgressPublic);
+  // Progreso de UN estudiante (o ninguno). Quién puede verlo lo decide RLS, no este código.
+  const progressVisible = opts.progressStudentId !== null;
   const progress: ProgressMap = {};
-  if (progressVisible && program.studentId) {
+  if (opts.progressStudentId) {
     for (const ids of chunk(courseIds)) {
       const { data, error } = await sb
         .from('student_progress')
         .select('course_id, status')
-        .eq('student_id', program.studentId)
+        .eq('student_id', opts.progressStudentId)
         .in('course_id', ids);
       if (error) throw error;
       for (const p of data ?? []) if (p.status === 'approved') progress[p.course_id as string] = 'approved';
@@ -178,6 +179,7 @@ export async function fetchPensum(program: Program, opts: { isAdmin: boolean }):
     requirements,
     progress,
     progressVisible,
+    progressStudentId: opts.progressStudentId,
   };
 }
 

@@ -67,6 +67,8 @@ export interface PensumData {
   progress: ProgressMap;
   /** false cuando el progreso no es visible para quien consulta (vista pública sin progreso). */
   progressVisible: boolean;
+  /** Estudiante cuyo progreso se cargó (null = sin progreso). */
+  progressStudentId: string | null;
 }
 
 export const ORGANIZATION_LABELS: Record<OrganizationType, { singular: string; plural: string }> = {

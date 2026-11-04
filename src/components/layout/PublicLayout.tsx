@@ -1,10 +1,13 @@
 import { Link, Outlet } from 'react-router';
+import { LogIn, LogOut } from 'lucide-react';
 import { usePensum } from '../../context/PensumContext';
+import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { ProgramLogo } from './ProgramLogo';
 
 export function PublicLayout() {
   const { data } = usePensum();
+  const { session, signOut } = useAuth();
   return (
     <div className="min-h-dvh">
       <header className="no-print sticky top-0 z-30 border-t-4 border-t-accent-600 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
@@ -17,8 +20,17 @@ export function PublicLayout() {
             </span>
           </Link>
           {/* Vista del estudiante: sin enlaces al panel; la administración se abre solo por su URL. */}
-          <nav className="ml-auto flex items-center gap-1">
+          <nav className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeToggle />
+            {session ? (
+              <button type="button" className="btn-ghost px-3" onClick={() => signOut()} aria-label="Cerrar sesión">
+                <LogOut className="size-4" /> <span className="hidden sm:inline">Salir</span>
+              </button>
+            ) : (
+              <Link to="/ingresar" className="btn-primary px-3">
+                <LogIn className="size-4" /> <span className="hidden sm:inline">Iniciar sesión</span>
+              </Link>
+            )}
           </nav>
         </div>
       </header>

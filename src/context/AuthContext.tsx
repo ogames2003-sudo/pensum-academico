@@ -2,13 +2,21 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js';
 import { friendlyError, supabase } from '../services/supabase';
 
-type Role = 'admin' | 'student' | 'viewer';
+export type Role = 'admin' | 'student' | 'viewer';
+
+/** Nombre visible del usuario (para el saludo). */
+export interface UserProfile {
+  firstName: string | null;
+  lastName: string | null;
+}
 
 interface AuthState {
   loading: boolean;
   session: Session | null;
   role: Role | null;
   isAdmin: boolean;
+  isStudent: boolean;
+  profile: UserProfile | null;
   /** null = perfil leído; 'missing' = no hay fila en profiles; 'error:<mensaje>' = no se pudo leer. */
   profileIssue: string | null;
   signIn: (email: string, password: string) => Promise<void>;
@@ -20,6 +28,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
   const [profileIssue, setProfileIssue] = useState<string | null>(null);
 
@@ -32,16 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) {
           setSession(null);
           setRole(null);
+          setProfile(null);
           setProfileIssue(null);
           setLoading(false);
         }
         return;
       }
       // El rol se lee de la base (protegida por RLS); nunca se deduce en el cliente.
-      const { data, error } = await supabase!.from('profiles').select('role').eq('id', s.user.id).maybeSingle();
+      // select('*'): funciona aunque la base aún no tenga las columnas de nombre (migración 0003).
+      const { data, error } = await supabase!.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
       if (active) {
         setSession(s);
         setRole((data?.role as Role | undefined) ?? 'viewer');
+        setProfile(data ? { firstName: (data.first_name as string | null) ?? null, lastName: (data.last_name as string | null) ?? null } : null);
         // Distinguir «no se pudo leer» y «no existe» de «existe sin rol admin»: cada caso se corrige distinto.
         setProfileIssue(error ? `error:${friendlyError(error)}` : data ? null : 'missing');
         setLoading(false);
@@ -65,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     role,
     isAdmin: role === 'admin',
+    isStudent: role === 'student',
+    profile,
     profileIssue,
     async signIn(email, password) {
       if (!supabase) throw new Error('Supabase no está configurado.');
@@ -87,4 +101,12 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth debe usarse dentro de <AuthProvider>.');
   return ctx;
+}
+
+/** «Ana» / «Ana López» / correo, según lo disponible. */
+export function displayName(p: UserProfile | null, email?: string | null, full = false): string {
+  const first = p?.firstName?.trim();
+  const last = p?.lastName?.trim();
+  if (first) return full && last ? `${first} ${last}` : first;
+  return email ?? 'estudiante';
 }

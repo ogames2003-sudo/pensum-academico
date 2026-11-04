@@ -13,7 +13,7 @@ describe('resolveAdminPath', () => {
   });
 
   it('rechaza rutas inválidas o que chocan con las públicas', () => {
-    for (const bad of ['/', '/a', '/con espacio', '/dos/segmentos', '/reporte', '/../x']) {
+    for (const bad of ['/', '/a', '/con espacio', '/dos/segmentos', '/reporte', '/ingresar', '/../x']) {
       expect(resolveAdminPath(bad)).toBe('/admin');
     }
   });
