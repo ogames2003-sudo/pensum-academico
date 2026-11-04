@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import { useApprovalToggle } from '../../hooks/useApprovalToggle';
 import { formatCredits, groupByTerm } from '../../lib/pensumView';
 import { ORGANIZATION_LABELS } from '../../types/domain';
+import { ADMIN_PATH } from '../../config';
 
 export function DashboardPage() {
   const { status, error, data, academic, reload } = usePensum();
@@ -29,7 +30,7 @@ export function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Link to="/reporte" className="btn-secondary"><FileDown className="size-4" /> PDF</Link>
-          <Link to="/admin/cursos?nuevo=1" className="btn-primary"><Plus className="size-4" /> Nuevo curso</Link>
+          <Link to={`${ADMIN_PATH}/cursos?nuevo=1`} className="btn-primary"><Plus className="size-4" /> Nuevo curso</Link>
         </div>
       </div>
 
@@ -39,8 +40,8 @@ export function DashboardPage() {
           title="Tu pensum está vacío"
           action={
             <>
-              <Link to="/admin/cursos?nuevo=1" className="btn-primary"><Plus className="size-4" /> Crear el primer curso</Link>
-              <Link to="/admin/datos" className="btn-secondary">Importar CSV o cargar demo</Link>
+              <Link to={`${ADMIN_PATH}/cursos?nuevo=1`} className="btn-primary"><Plus className="size-4" /> Crear el primer curso</Link>
+              <Link to={`${ADMIN_PATH}/datos`} className="btn-secondary">Importar CSV o cargar demo</Link>
             </>
           }
         >
@@ -77,7 +78,7 @@ export function DashboardPage() {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4">
               <h2 className="font-semibold">Acciones rápidas</h2>
-              <Link to="/admin/cursos" className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-100">Gestionar cursos</Link>
+              <Link to={`${ADMIN_PATH}/cursos`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-100">Gestionar cursos</Link>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -118,7 +119,7 @@ export function DashboardPage() {
                                 {savingId === c.id ? <Loader2 className="size-3.5 animate-spin" /> : approved ? <CheckCircle2 className="size-3.5" /> : <Circle className="size-3.5" />}
                                 {approved ? 'Aprobado' : 'Pendiente'}
                               </button>
-                              <Link to={`/admin/cursos?editar=${c.id}`} className="btn-ghost p-1.5" aria-label={`Editar ${c.code}`}>
+                              <Link to={`${ADMIN_PATH}/cursos?editar=${c.id}`} className="btn-ghost p-1.5" aria-label={`Editar ${c.code}`}>
                                 <Pencil className="size-4" />
                               </Link>
                             </div>

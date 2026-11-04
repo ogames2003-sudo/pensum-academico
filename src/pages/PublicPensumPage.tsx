@@ -14,7 +14,7 @@ export function PublicPensumPage() {
   if (status === 'empty' || !data || !academic) {
     return (
       <EmptyState icon={EyeOff} title="El pensum no está disponible">
-        Todavía no se ha publicado un programa académico. Si eres el administrador, inicia sesión para configurarlo.
+        Todavía no se ha publicado un programa académico.
       </EmptyState>
     );
   }

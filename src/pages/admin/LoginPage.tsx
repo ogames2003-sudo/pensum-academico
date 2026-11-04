@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePensum } from '../../context/PensumContext';
 import { ProgramLogo } from '../../components/layout/ProgramLogo';
 import { friendlyError } from '../../services/supabase';
+import { ADMIN_PATH } from '../../config';
 
 export function LoginPage() {
   const { session, isAdmin, loading, profileIssue, signIn } = useAuth();
@@ -14,7 +15,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && session && isAdmin) return <Navigate to="/admin" replace />;
+  if (!loading && session && isAdmin) return <Navigate to={ADMIN_PATH} replace />;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

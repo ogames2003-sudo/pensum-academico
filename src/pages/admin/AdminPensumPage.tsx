@@ -4,6 +4,7 @@ import { usePensum } from '../../context/PensumContext';
 import { useApprovalToggle } from '../../hooks/useApprovalToggle';
 import { PensumBoard } from '../../components/pensum/PensumBoard';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { ADMIN_PATH } from '../../config';
 
 /** El mismo pensum interactivo de la vista pública, con acciones de aprobación y edición. */
 export function AdminPensumPage() {
@@ -21,7 +22,7 @@ export function AdminPensumPage() {
         <p className="text-sm text-slate-500">Selecciona un curso para ver su detalle y cambiar su aprobación.</p>
       </div>
       {data.courses.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No hay cursos" action={<Link className="btn-primary" to="/admin/cursos?nuevo=1">Crear curso</Link>} />
+        <EmptyState icon={BookOpen} title="No hay cursos" action={<Link className="btn-primary" to={`${ADMIN_PATH}/cursos?nuevo=1`}>Crear curso</Link>} />
       ) : (
         <PensumBoard
           data={data}
@@ -35,7 +36,7 @@ export function AdminPensumPage() {
                   {savingId === course.id ? <Loader2 className="size-4 animate-spin" /> : approved ? <Circle className="size-4" /> : <CheckCircle2 className="size-4" />}
                   {approved ? 'Marcar como pendiente' : 'Marcar como aprobado'}
                 </button>
-                <Link className="btn-ghost" to={`/admin/cursos?editar=${course.id}`}>
+                <Link className="btn-ghost" to={`${ADMIN_PATH}/cursos?editar=${course.id}`}>
                   <Pencil className="size-4" /> Editar curso
                 </Link>
               </>

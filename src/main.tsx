@@ -19,6 +19,7 @@ import { AdminPensumPage } from './pages/admin/AdminPensumPage';
 import { CoursesPage } from './pages/admin/CoursesPage';
 import { ProgramPage } from './pages/admin/ProgramPage';
 import { DataPage } from './pages/admin/DataPage';
+import { ADMIN_PATH } from './config';
 
 initTheme();
 
@@ -47,9 +48,9 @@ const router = createBrowserRouter(
               children: [{ path: '/', element: <PublicPensumPage /> }],
             },
             { path: '/reporte', element: <ReportPage /> },
-            { path: '/admin/login', element: <LoginPage /> },
+            { path: `${ADMIN_PATH}/login`, element: <LoginPage /> },
             {
-              path: '/admin',
+              path: ADMIN_PATH,
               element: <AdminLayout />,
               children: [
                 { index: true, element: <DashboardPage /> },

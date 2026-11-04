@@ -5,23 +5,24 @@ import { usePensum } from '../../context/PensumContext';
 import { EmptyState, LoadingState } from '../ui/States';
 import { ThemeToggle } from './ThemeToggle';
 import { ProgramLogo } from './ProgramLogo';
+import { ADMIN_PATH } from '../../config';
 
 const NAV = [
-  { to: '/admin', label: 'Resumen', icon: LayoutDashboard, end: true },
-  { to: '/admin/pensum', label: 'Pensum', icon: Table2 },
-  { to: '/admin/cursos', label: 'Cursos', icon: BookOpen },
-  { to: '/admin/programa', label: 'Programa', icon: Settings },
-  { to: '/admin/datos', label: 'Datos', icon: Database },
+  { to: ADMIN_PATH, label: 'Resumen', icon: LayoutDashboard, end: true },
+  { to: `${ADMIN_PATH}/pensum`, label: 'Pensum', icon: Table2 },
+  { to: `${ADMIN_PATH}/cursos`, label: 'Cursos', icon: BookOpen },
+  { to: `${ADMIN_PATH}/programa`, label: 'Programa', icon: Settings },
+  { to: `${ADMIN_PATH}/datos`, label: 'Datos', icon: Database },
 ];
 
-/** Protege /admin/*: requiere sesión de Supabase Auth y rol 'admin' en profiles (verificado también por RLS). */
+/** Protege el panel (ADMIN_PATH): requiere sesión de Supabase Auth y rol 'admin' en profiles (verificado también por RLS). */
 export function AdminLayout() {
   const { loading, session, isAdmin, signOut } = useAuth();
   const { data, status } = usePensum();
   const location = useLocation();
 
   if (loading) return <LoadingState label="Verificando sesión…" />;
-  if (!session) return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+  if (!session) return <Navigate to={`${ADMIN_PATH}/login`} replace state={{ from: location.pathname }} />;
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
@@ -41,8 +42,8 @@ export function AdminLayout() {
   }
 
   // Sin programa: la única sección útil es crearlo.
-  const needsProgram = status === 'empty' && location.pathname !== '/admin/programa';
-  if (needsProgram) return <Navigate to="/admin/programa" replace />;
+  const needsProgram = status === 'empty' && location.pathname !== `${ADMIN_PATH}/programa`;
+  if (needsProgram) return <Navigate to={`${ADMIN_PATH}/programa`} replace />;
 
   return (
     <div className="min-h-dvh lg:flex">

@@ -6,6 +6,7 @@ import { ErrorState, LoadingState, ProgressBar } from '../components/ui/States';
 import { formatCredits, groupByTerm } from '../lib/pensumView';
 import { describeRequirement } from '../lib/engine/requirements';
 import { ORGANIZATION_LABELS } from '../types/domain';
+import { ADMIN_PATH } from '../config';
 
 /**
  * Reporte imprimible. «Exportar PDF» usa el diálogo de impresión del navegador → «Guardar como PDF»:
@@ -26,7 +27,7 @@ export function ReportPage() {
   return (
     <div className="mx-auto max-w-4xl bg-white p-6 text-slate-900 sm:p-10 print:max-w-none print:p-0">
       <div className="no-print mb-6 flex flex-wrap justify-between gap-2">
-        <Link to={isAdmin ? '/admin' : '/'} className="btn-secondary">
+        <Link to={isAdmin ? ADMIN_PATH : '/'} className="btn-secondary">
           <ArrowLeft className="size-4" /> Volver
         </Link>
         <button className="btn-primary" onClick={() => window.print()}>
