@@ -72,3 +72,10 @@ createRoot(document.getElementById('root')!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 );
+
+// Service worker para que la app sea instalable. Solo en producción: en desarrollo interferiría con la recarga en caliente.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((e) => console.warn('No se registró el service worker:', e));
+  });
+}
