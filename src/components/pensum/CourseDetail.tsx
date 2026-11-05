@@ -1,10 +1,12 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { CheckCircle2, Circle, Lock, LockOpen, X, AlertTriangle } from 'lucide-react';
+import { Circle, Lock, LockOpen, X, AlertTriangle } from 'lucide-react';
 import type { Course, Requirement, Term } from '../../types/domain';
 import type { CourseState } from '../../lib/engine/academic';
 import { describeMissing, describeRequirement } from '../../lib/engine/requirements';
 import { formatCredits } from '../../lib/pensumView';
 import { dependentsOf } from '../../lib/engine/graph';
+import { formatScore, GRADE_FIELDS, totalScore, zoneScore, type Grades } from '../../lib/engine/grades';
+import { EvaluationBadge } from './EvaluationBadge';
 
 interface Props {
   course: Course | null;
@@ -14,13 +16,15 @@ interface Props {
   requirements: Record<string, Requirement[]>;
   courseById: Map<string, Course>;
   progressVisible: boolean;
+  /** Calificaciones del curso para el estudiante en pantalla. */
+  grades: Grades | undefined;
   onClose: () => void;
   /** Acciones administrativas opcionales (aprobar / editar). */
   actions?: ReactNode;
 }
 
 /** Panel lateral (o inferior en móvil) con el detalle de un curso y exactamente lo que le falta. */
-export function CourseDetail({ course, state, term, termLabel, requirements, courseById, progressVisible, onClose, actions }: Props) {
+export function CourseDetail({ course, state, term, termLabel, requirements, courseById, progressVisible, grades, onClose, actions }: Props) {
   const closeBtn = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -70,10 +74,21 @@ export function CourseDetail({ course, state, term, termLabel, requirements, cou
                 approved ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40' : 'border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/60'
               }`}
             >
-              <p className="flex items-center gap-2 font-semibold">
-                {approved ? <CheckCircle2 className="size-5 text-emerald-600" /> : state.availability === 'blocked' ? <Lock className="size-5 text-slate-500" /> : <LockOpen className="size-5 text-slate-500" />}
-                {approved ? 'Aprobado' : state.availability === 'blocked' ? 'Pendiente · Bloqueado' : 'Pendiente · Disponible para cursar'}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <EvaluationBadge status={state.evaluation} long />
+                {!approved && (
+                  <span className="inline-flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
+                    {state.availability === 'blocked' ? <Lock className="size-4" /> : <LockOpen className="size-4" />}
+                    {state.availability === 'blocked' ? 'Bloqueado' : 'Disponible para cursar'}
+                  </span>
+                )}
+              </div>
+              {state.evaluation === 'preapproved' && (
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                  Estado provisional: la zona alcanza 61 puntos, pero el curso no se aprueba ni suma créditos hasta registrar el examen final.
+                </p>
+              )}
+              <GradeBreakdown grades={grades} manualApproved={approved && !state.graded} />
               {!approved && state.missing.length > 0 && (
                 <div className="mt-3">
                   <p className="text-sm font-medium">Requisitos que faltan:</p>
@@ -146,6 +161,44 @@ export function CourseDetail({ course, state, term, termLabel, requirements, cou
         </div>
       </aside>
     </div>
+  );
+}
+
+/** Desglose completo: actividad, nota y máximo; zona y total. «--» = no registrada. */
+function GradeBreakdown({ grades, manualApproved }: { grades: Grades | undefined; manualApproved: boolean }) {
+  if (manualApproved) {
+    return <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">Aprobado sin calificaciones registradas.</p>;
+  }
+  const zone = grades ? zoneScore(grades) : null;
+  const total = grades ? totalScore(grades) : null;
+  return (
+    <table className="mt-3 w-full text-sm">
+      <caption className="sr-only">Calificaciones del curso</caption>
+      <tbody className="divide-y divide-slate-200/70 dark:divide-slate-700/70">
+        {GRADE_FIELDS.map((f) => (
+          <tr key={f.key}>
+            <th scope="row" className="py-1.5 text-left font-normal text-slate-600 dark:text-slate-300">
+              <span className="mr-1.5 inline-block w-6 font-mono text-xs font-semibold text-slate-500">{f.code}</span>
+              {f.label}
+            </th>
+            <td className="py-1.5 text-right font-mono tabular-nums">
+              <strong>{formatScore(grades ? grades[f.key] : null)}</strong>
+              <span className="text-slate-400">/{f.max}</span>
+            </td>
+          </tr>
+        ))}
+        <tr>
+          <th scope="row" className="pt-2 text-left font-semibold">Zona</th>
+          <td className="pt-2 text-right font-mono font-semibold tabular-nums">{zone === null ? '--' : `${formatScore(zone)}/70`}</td>
+        </tr>
+        <tr>
+          <th scope="row" className="py-1 text-left font-semibold">Nota total</th>
+          <td className="py-1 text-right font-mono font-semibold tabular-nums">
+            {total !== null ? `${formatScore(total)}/100` : zone !== null ? 'Pendiente' : '--'}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 

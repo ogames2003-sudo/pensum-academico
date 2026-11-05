@@ -114,7 +114,7 @@ describe('estado académico', () => {
     expect(byCourse.get('c')!.availability).toBe('blocked');
     expect(byCourse.get('d')!.availability).toBe('available');
     expect(byCourse.get('e')!.availability).toBe('available'); // 4 créditos ≥ 4
-    expect(stats).toEqual({
+    expect(stats).toMatchObject({
       totalCourses: 5,
       approvedCourses: 1,
       pendingCourses: 4,

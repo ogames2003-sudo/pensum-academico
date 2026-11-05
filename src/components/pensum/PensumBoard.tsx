@@ -142,6 +142,7 @@ export function PensumBoard({ data, academic, courseById, detailActions }: Props
                       key={c.id}
                       course={c}
                       state={academic.byCourse.get(c.id)}
+                      grades={data.grades[c.id]}
                       showProgress={showProgress}
                       prerequisiteCount={(data.requirements[c.id] ?? []).length}
                       onSelect={(course) => setSelectedId(course.id)}
@@ -162,6 +163,7 @@ export function PensumBoard({ data, academic, courseById, detailActions }: Props
         requirements={data.requirements}
         courseById={courseById}
         progressVisible={showProgress}
+        grades={selected ? data.grades[selected.id] : undefined}
         onClose={close}
         actions={selected && detailActions ? detailActions(selected, close) : undefined}
       />

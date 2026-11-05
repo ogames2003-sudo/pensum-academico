@@ -204,6 +204,81 @@ ok((await db.query(`select * from public.courses`)).rows.length === 0, 'cuenta n
 await as('authenticated', ADMIN);
 await db.exec(`update public.programs set is_public = true where id = '${prog}'`);
 
+// ───── Calificaciones (0004) ─────
+await db.exec(`reset role;`);
+await db.exec(readFileSync(new URL('../supabase/migrations/0004_grades.sql', import.meta.url), 'utf8'));
+await db.exec(readFileSync(new URL('../supabase/migrations/0004_grades.sql', import.meta.url), 'utf8'));
+ok(true, '0004 aplicada (y re-ejecutable)');
+
+const statusOf = async (a, e, e1, e2, ef) =>
+  (await db.query(`select public.grade_status($1,$2,$3,$4,$5) s`, [a, e, e1, e2, ef])).rows[0].s;
+ok((await statusOf(null, null, null, null, null)) === 'pending', 'grade_status: sin notas → pending');
+ok((await statusOf(10, 13, 12, 13, 20)) === 'approved', 'grade_status: 48 + 20 = 68 → approved');
+ok((await statusOf(10, 10, 11, 11, 15)) === 'failed', 'grade_status: 42 + 15 = 57 → failed');
+ok((await statusOf(10, 10, 10, 10, 21)) === 'approved', 'grade_status: 61 exactos → approved');
+ok((await statusOf(10, 19, 17, 16, null)) === 'preapproved', 'grade_status: zona 62 sin EF → preapproved');
+ok((await statusOf(10, 12, 11, 14, null)) === 'in_progress', 'grade_status: zona 47 sin EF → in_progress');
+ok((await statusOf(0, 0, 0, 0, 0)) === 'failed', 'grade_status: cero ≠ sin registrar');
+
+await as('authenticated', ADMIN);
+const GC = (await db.query(`select id from public.courses where code = 'MAT102'`)).rows[0].id;
+const SEMC = (await db.query(`select id from public.courses where code = 'SEM0'`)).rows[0].id;
+const rowsJson = (o) => JSON.stringify(o);
+
+// EF registrado con total ≥ 61 → aprobado y sincroniza progreso.
+await db.query(`select public.save_grades_batch($1, $2::jsonb)`, [STU2, rowsJson([{ course_id: GC, attendance: 10, exercises: 13, partial1: 12, partial2: 13, final_exam: 20 }])]);
+let g = (await db.query(`select * from public.course_grades where student_id = $1 and course_id = $2`, [STU2, GC])).rows[0];
+ok(g.evaluation_status === 'approved', 'guardar 48 + 20 → estado approved');
+ok((await db.query(`select status from public.student_progress where student_id = $1 and course_id = $2`, [STU2, GC])).rows[0]?.status === 'approved', 'aprobado sincroniza student_progress (otorga créditos)');
+
+// Corrección que baja a < 61 → reprobado y pierde la aprobación.
+await db.query(`update public.course_grades set final_exam_score = 5 where student_id = $1 and course_id = $2`, [STU2, GC]);
+g = (await db.query(`select evaluation_status from public.course_grades where student_id = $1 and course_id = $2`, [STU2, GC])).rows[0];
+ok(g.evaluation_status === 'failed', 'editar EF a 5 → failed');
+ok((await db.query(`select 1 from public.student_progress where student_id = $1 and course_id = $2`, [STU2, GC])).rows.length === 0, 'reprobado quita la aprobación (sin créditos)');
+
+// Preaprobado: no aprueba. Y la columna admite NULL (no se guarda «--» ni cero).
+await db.query(`update public.course_grades set final_exam_score = null, exercises_score = 20, partial_exam_1_score = 20, partial_exam_2_score = 20 where student_id = $1 and course_id = $2`, [STU2, GC]);
+g = (await db.query(`select evaluation_status, final_exam_score from public.course_grades where student_id = $1 and course_id = $2`, [STU2, GC])).rows[0];
+ok(g.evaluation_status === 'preapproved' && g.final_exam_score === null, 'EF pendiente se guarda como NULL → preapproved');
+ok((await db.query(`select 1 from public.student_progress where student_id = $1 and course_id = $2`, [STU2, GC])).rows.length === 0, 'preaprobado no otorga aprobación definitiva');
+
+// Límites en la base.
+await expectError(`insert into public.course_grades (student_id, course_id, attendance_score) values ('${STU2}', '${SEMC}', 11)`, /check/, 'A > 10 rechazado por la base');
+await expectError(`insert into public.course_grades (student_id, course_id, final_exam_score) values ('${STU2}', '${SEMC}', 31)`, /check/, 'EF > 30 rechazado por la base');
+await expectError(`insert into public.course_grades (student_id, course_id, exercises_score) values ('${STU2}', '${SEMC}', -1)`, /check/, 'notas negativas rechazadas');
+await expectError(`insert into public.course_grades (student_id, course_id, exercises_score) values ('${STU2}', '${SEMC}', '--')`, /invalid input syntax/, '«--» no se puede guardar en una columna numérica');
+
+// Transacción: si una fila es inválida, no se guarda ninguna.
+await expectError(
+  `select public.save_grades_batch('${STU2}', '${rowsJson([
+    { course_id: SEMC, attendance: 10, exercises: 10, partial1: 10, partial2: 10, final_exam: 25 },
+    { course_id: GC, attendance: 99, exercises: 0, partial1: 0, partial2: 0, final_exam: 0 },
+  ])}'::jsonb)`,
+  /check/,
+  'lote con una nota inválida se rechaza completo',
+);
+ok((await db.query(`select 1 from public.course_grades where student_id = $1 and course_id = $2`, [STU2, SEMC])).rows.length === 0, 'el lote fallido no dejó resultados parciales');
+
+// Borrar calificaciones quita la aprobación derivada.
+await db.query(`select public.save_grades_batch($1, $2::jsonb)`, [STU2, rowsJson([{ course_id: SEMC, attendance: 10, exercises: 20, partial1: 20, partial2: 20, final_exam: 30 }])]);
+ok((await db.query(`select 1 from public.student_progress where student_id = $1 and course_id = $2`, [STU2, SEMC])).rows.length === 1, '100/100 aprueba');
+await db.query(`delete from public.course_grades where student_id = $1 and course_id = $2`, [STU2, SEMC]);
+ok((await db.query(`select 1 from public.student_progress where student_id = $1 and course_id = $2`, [STU2, SEMC])).rows.length === 0, 'borrar calificaciones quita la aprobación derivada');
+
+// Permisos: estudiante solo lectura de lo suyo.
+await db.query(`select public.save_grades_batch($1, $2::jsonb)`, [STU2, rowsJson([{ course_id: SEMC, attendance: 10, exercises: 15, partial1: 15, partial2: 15, final_exam: 20 }])]);
+await as('authenticated', STU2);
+ok((await db.query(`select * from public.course_grades`)).rows.every((r) => r.student_id === STU2), 'estudiante ve solo sus calificaciones');
+ok((await db.query(`update public.course_grades set final_exam_score = 30 where student_id = '${STU2}' returning 1`)).rows.length === 0, 'estudiante no puede modificar sus notas (0 filas afectadas)');
+ok((await db.query(`select final_exam_score from public.course_grades where student_id = $1 and course_id = $2`, [STU2, SEMC])).rows[0].final_exam_score === '20.00', '…y la nota sigue igual');
+await expectError(`select public.save_grades_batch('${STU2}', '[]'::jsonb)`, /No autorizado/, 'estudiante no puede usar el guardado en lote');
+await as('authenticated', STU1);
+ok((await db.query(`select * from public.course_grades`)).rows.length === 0, 'otro estudiante no ve notas ajenas');
+await as('anon');
+ok((await db.query(`select * from public.course_grades`)).rows.length === 0, 'anon no ve calificaciones privadas');
+await as('authenticated', ADMIN);
+
 // ───── Eliminación ─────
 await as('authenticated', ADMIN);
 await db.exec(`delete from public.courses where id = '${A}'`);

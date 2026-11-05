@@ -20,6 +20,11 @@ export function useApprovalToggle() {
   async function toggle(course: Course) {
     const state = academic?.byCourse.get(course.id);
     if (!state || savingId) return;
+    // Con calificaciones, el estado lo decide la nota (≥ 61 con examen final); no se puede forzar a mano.
+    if (state.graded) {
+      toast.error(`${course.code} tiene calificaciones: su estado se calcula con la nota. Edítalas en «Calificaciones».`);
+      return;
+    }
     const next = state.status === 'approved' ? 'pending' : 'approved';
 
     if (next === 'approved' && state.availability === 'blocked') {

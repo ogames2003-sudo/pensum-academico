@@ -10,6 +10,7 @@ import type {
   Term,
 } from '../types/domain';
 import type { ImportCourse } from '../lib/csv';
+import type { Grades } from '../lib/engine/grades';
 import { PROGRAM_SLUG, requireSupabase } from './supabase';
 
 // ───────────────────────── Filas ⇄ dominio ─────────────────────────
@@ -172,15 +173,81 @@ export async function fetchPensum(program: Program, opts: { progressStudentId: s
     }
   }
 
+  const grades = opts.progressStudentId ? await fetchGrades(opts.progressStudentId, courseIds) : {};
+
   return {
     program,
     terms: ((terms.data ?? []) as TermRow[]).map(toTerm),
     courses: ((courses.data ?? []) as CourseRow[]).map(toCourse),
     requirements,
     progress,
+    grades,
     progressVisible,
     progressStudentId: opts.progressStudentId,
   };
+}
+
+// ───────────────────────── Calificaciones ─────────────────────────
+
+interface GradeRow {
+  course_id: string;
+  attendance_score: number | string | null;
+  exercises_score: number | string | null;
+  partial_exam_1_score: number | string | null;
+  partial_exam_2_score: number | string | null;
+  final_exam_score: number | string | null;
+}
+
+// numeric llega como string; NULL se conserva como null (pendiente, nunca 0).
+const num = (v: number | string | null) => (v === null ? null : Number(v));
+const toGrades = (r: GradeRow): Grades => ({
+  attendance: num(r.attendance_score),
+  exercises: num(r.exercises_score),
+  partial1: num(r.partial_exam_1_score),
+  partial2: num(r.partial_exam_2_score),
+  finalExam: num(r.final_exam_score),
+});
+
+/** Base sin la migración 0004: no hay calificaciones, la app sigue con la aprobación manual. */
+const isMissingGradesTable = (e: { code?: string; message?: string }) =>
+  e.code === '42P01' || e.code === 'PGRST205' || /course_grades/.test(e.message ?? '');
+
+export async function fetchGrades(studentId: string, courseIds: string[]): Promise<Record<string, Grades>> {
+  const sb = requireSupabase();
+  const out: Record<string, Grades> = {};
+  for (const ids of chunk(courseIds)) {
+    const { data, error } = await sb
+      .from('course_grades')
+      .select('course_id, attendance_score, exercises_score, partial_exam_1_score, partial_exam_2_score, final_exam_score')
+      .eq('student_id', studentId)
+      .in('course_id', ids);
+    if (error) {
+      if (isMissingGradesTable(error)) return {};
+      throw error;
+    }
+    for (const r of (data ?? []) as GradeRow[]) out[r.course_id] = toGrades(r);
+  }
+  return out;
+}
+
+/** Guarda calificaciones de uno o varios cursos en una sola transacción (RPC save_grades_batch). */
+export async function saveGrades(studentId: string, byCourse: Record<string, Grades>): Promise<number> {
+  const rows = Object.entries(byCourse).map(([courseId, g]) => ({
+    course_id: courseId,
+    attendance: g.attendance,
+    exercises: g.exercises,
+    partial1: g.partial1,
+    partial2: g.partial2,
+    final_exam: g.finalExam,
+  }));
+  const { data, error } = await requireSupabase().rpc('save_grades_batch', { p_student_id: studentId, p_rows: rows });
+  if (error) throw error;
+  return Number(data);
+}
+
+export async function deleteGrades(studentId: string, courseId: string): Promise<void> {
+  const { error } = await requireSupabase().from('course_grades').delete().eq('student_id', studentId).eq('course_id', courseId);
+  if (error) throw error;
 }
 
 // ───────────────────────── Programa ─────────────────────────

@@ -1,5 +1,7 @@
 /** Tipos de dominio. Independientes de Supabase: los servicios traducen filas ⇄ estos tipos. */
 
+import type { Grades } from '../lib/engine/grades';
+
 export type OrganizationType = 'semester' | 'cycle' | 'trimester' | 'quarter' | 'grade' | 'year';
 
 export type AccentColor = 'azul' | 'indigo' | 'vino' | 'pizarra' | 'ambar' | 'rojoazul';
@@ -69,6 +71,8 @@ export interface PensumData {
   progressVisible: boolean;
   /** Estudiante cuyo progreso se cargó (null = sin progreso). */
   progressStudentId: string | null;
+  /** Calificaciones del estudiante en pantalla por curso (vacío = sin calificaciones registradas). */
+  grades: Record<string, Grades>;
 }
 
 export const ORGANIZATION_LABELS: Record<OrganizationType, { singular: string; plural: string }> = {

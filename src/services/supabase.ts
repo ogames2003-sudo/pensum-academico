@@ -25,6 +25,10 @@ export function friendlyError(error: unknown): string {
   if (e?.code === '42703' || e?.code === 'PGRST204' || /logo_url|programs_accent_color_check/.test(msg)) {
     return 'Falta ejecutar en Supabase la migración supabase/migrations/0002_branding.sql (logo y paleta rojo y azul).';
   }
+  if (/course_grades_.*_check/.test(msg)) return 'Una calificación está fuera del rango permitido (A 0–10, E/E1/E2 0–20, EF 0–30).';
+  if (/save_grades_batch|course_grades/.test(msg) && (e?.code === 'PGRST202' || e?.code === 'PGRST205' || e?.code === '42P01')) {
+    return 'Falta ejecutar en Supabase la migración supabase/migrations/0004_grades.sql (calificaciones).';
+  }
   if (e?.code === '23505') {
     if (msg.includes('courses_program_id_code_key')) return 'Ya existe un curso con ese código.';
     if (msg.includes('terms_program_name_uq')) return 'Ya existe un ciclo con ese nombre.';

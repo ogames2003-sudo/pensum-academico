@@ -20,6 +20,7 @@ import { CoursesPage } from './pages/admin/CoursesPage';
 import { ProgramPage } from './pages/admin/ProgramPage';
 import { DataPage } from './pages/admin/DataPage';
 import { StudentsPage } from './pages/admin/StudentsPage';
+import { GradesPage } from './pages/admin/GradesPage';
 import { ADMIN_PATH } from './config';
 
 initTheme();
@@ -61,6 +62,7 @@ const router = createBrowserRouter(
                 { path: 'programa', element: <ProgramPage /> },
                 { path: 'datos', element: <DataPage /> },
                 { path: 'estudiantes', element: <StudentsPage /> },
+                { path: 'calificaciones', element: <GradesPage /> },
               ],
             },
             { path: '*', element: <NotFoundPage /> },

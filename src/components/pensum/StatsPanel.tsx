@@ -3,6 +3,8 @@ import { BookCheck, BookOpen, GraduationCap, Hourglass, Lock, LockOpen, Sigma, T
 import type { AcademicStats } from '../../lib/engine/academic';
 import { formatCredits } from '../../lib/pensumView';
 import { ProgressBar } from '../ui/States';
+import { EVALUATION_LABELS, formatScore, type EvaluationStatus } from '../../lib/engine/grades';
+import { EvaluationBadge } from './EvaluationBadge';
 
 export function StatTile({
   icon: Icon,
@@ -73,6 +75,43 @@ export function StatsPanel({ stats, showProgress, detailed = false }: { stats: A
           </>
         )}
       </div>
+      <GradeStats stats={stats} />
+    </div>
+  );
+}
+
+/** Estados de evaluación y promedios. Solo con lo registrado: lo pendiente no cuenta como cero. */
+function GradeStats({ stats }: { stats: AcademicStats }) {
+  const { evaluation: ev, averages: av } = stats;
+  if (ev.failed + ev.preapproved + ev.in_progress === 0 && av.definitiveCount === 0) return null;
+  const fmt = (n: number | null, max: number) => (n === null ? '--' : `${formatScore(n)}/${max}`);
+  return (
+    <div className="card p-4">
+      <p className="text-sm font-semibold">Calificaciones</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {(Object.keys(EVALUATION_LABELS) as EvaluationStatus[]).map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <EvaluationBadge status={k} />
+            <strong className="tabular-nums">{ev[k]}</strong>
+          </span>
+        ))}
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <Avg label="Promedio general" hint={`${av.definitiveCount} con nota definitiva`} value={fmt(av.definitive, 100)} />
+        <Avg label="Promedio de aprobados" value={fmt(av.approvedOnly, 100)} />
+        <Avg label="Promedio de zona" hint="cursos con zona completa" value={fmt(av.zone, 70)} />
+        <Avg label="Promedio examen final" hint="finales registrados" value={fmt(av.finalExam, 30)} />
+      </dl>
+    </div>
+  );
+}
+
+function Avg({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+      <dt className="text-xs text-slate-500">{label}</dt>
+      <dd className="text-lg font-bold tabular-nums">{value}</dd>
+      {hint && <dd className="text-[11px] text-slate-500">{hint}</dd>}
     </div>
   );
 }
